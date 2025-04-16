@@ -1,5 +1,4 @@
 import 'package:batler_app/MainScreen.dart';
-import 'package:batler_app/ProfileUserScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -75,6 +74,8 @@ class _RegisterNewUserScreenState extends State<RegisterNewUserScreen> {
       if (response.statusCode == 200) {
         showAppSnackBar(context, 'Данные успешно сохранены');
         await prefs.setString('is_new_user', 'no');
+        await prefs.setString('name', _nameController.text);
+        await prefs.setString('birthday', _birthDateController.text);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -154,6 +155,7 @@ class _RegisterNewUserScreenState extends State<RegisterNewUserScreen> {
                     initialDate: DateTime.now(),
                     firstDate: DateTime(1900),
                     lastDate: DateTime.now(),
+                    locale: const Locale('ru', 'RU'),
                   );
                   if (date != null) {
                     _birthDateController.text = DateFormat('dd.MM.yyyy').format(date);

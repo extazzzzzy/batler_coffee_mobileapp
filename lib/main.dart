@@ -4,6 +4,7 @@ import 'package:batler_app/RegisterNewUserScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:batler_app/LoginScreen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -60,6 +61,14 @@ class MyApp extends StatelessWidget {
             surface: Colors.white, // Фон календаря и карточек
             ),
           ),
+          localizationsDelegates: [
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: [
+            const Locale('ru', 'RU'), // Русский язык
+          ],
           home: snapshot.data,
         );
       },

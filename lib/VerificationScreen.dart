@@ -1,3 +1,5 @@
+import 'package:batler_app/MainScreen.dart';
+import 'package:batler_app/MenuScreen.dart';
 import 'package:batler_app/ProfileUserScreen.dart';
 import 'package:batler_app/RegisterNewUserScreen.dart';
 import 'package:flutter/material.dart';
@@ -106,7 +108,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => ProfileUserScreen(),
+              builder: (context) => MainScreen(),
             ),
           );
         }

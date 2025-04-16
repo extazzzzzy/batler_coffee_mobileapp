@@ -1,8 +1,10 @@
+import 'package:batler_app/CartScreen.dart';
+import 'package:batler_app/MenuScreen.dart';
 import 'package:batler_app/ProfileUserScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 
 class MainScreen extends StatefulWidget {
@@ -14,10 +16,10 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   static final List<Widget> _pages = [
-    Container(color: Colors.white, child: Center(child: Text('Меню'))),  // Заглушки
-    Container(color: Colors.white, child: Center(child: Text('Корзина'))), // для
+    MenuScreen(),
+    CartScreen(),
     Container(color: Colors.white, child: Center(child: Text('Акции'))),
-    ProfileUserScreen(),// других экранов
+    ProfileUserScreen(),
   ];
 
   void _onItemTapped(int index) {

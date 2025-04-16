@@ -1,3 +1,4 @@
+import 'package:batler_app/LoginScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -16,6 +17,7 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
   final String smileImg = 'src/img/emoji_profilescreen.png';
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _birthDateController = TextEditingController();
+  bool isLoading = true;
 
   @override
   void initState() {
@@ -72,6 +74,8 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
         }),
       );
       if (response.statusCode == 200) {
+        await prefs.setString('name', _nameController.text);
+        await prefs.setString('birthday', _birthDateController.text);
         showAppSnackBar(context, 'Данные успешно сохранены');
       }
       else {
@@ -96,13 +100,47 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
           'token': prefs.getString('token'),
         }),
       );
-      final responseBody = json.decode(response.body);
+      final responseBody = jsonDecode(utf8.decode(response.bodyBytes));
       if (response.statusCode == 200) {
         _nameController.text = responseBody['name'];
         _birthDateController.text = responseBody['birthday'];
       }
       else {
         showAppSnackBar(context, 'Ошибка получения данных');
+        print('Ошибка: ${response.statusCode}');
+      }
+      setState(() {
+        isLoading = false;
+      });
+    }
+    catch (e) {
+      showAppSnackBar(context, 'Ошибка соединения');
+      print('Ошибка соединения: $e');
+    }
+  }
+
+  void exitUser() async {
+    final url = Uri.parse('${dotenv.env['API_SERVER']}out');
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final response = await http.delete(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'token': prefs.getString('token'),
+        }),
+      );
+      if (response.statusCode == 200) {
+        await prefs.clear();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => LoginScreen(),
+          ),
+        );
+      }
+      else {
+        showAppSnackBar(context, 'Повторите попытку позже');
         print('Ошибка: ${response.statusCode}');
       }
     }
@@ -116,7 +154,10 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F7FA),
-      body: SafeArea(
+      body: isLoading
+        ? Center(child: CircularProgressIndicator(color: Color.fromRGBO(10, 66, 51, 1)))
+      :
+      SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
           child: Column(
@@ -159,6 +200,7 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
                     initialDate: DateTime.now(),
                     firstDate: DateTime(1900),
                     lastDate: DateTime.now(),
+                    locale: const Locale('ru', 'RU'),
                   );
                   if (date != null) {
                     _birthDateController.text = DateFormat('dd.MM.yyyy').format(date);
@@ -181,6 +223,31 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
                   },
                   child: Text(
                     'Сохранить',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: dotenv.env['APP_FONT_FAMILY'],
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 50),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.redAccent,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () {
+                    exitUser();
+                  },
+                  child: Text(
+                    'Выйти',
                     style: TextStyle(
                       fontSize: 16,
                       fontFamily: dotenv.env['APP_FONT_FAMILY'],
