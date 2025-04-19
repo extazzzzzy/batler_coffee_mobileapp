@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +16,7 @@ class CartItem {
   final int quantity;
   final List<dynamic> selectedIngredients;
   final int totalPrice;
+  final String weight;
 
   CartItem({
     required this.productId,
@@ -24,6 +26,7 @@ class CartItem {
     required this.quantity,
     required this.selectedIngredients,
     required this.totalPrice,
+    required this.weight,
   });
 
   Map<String, dynamic> toJson() {
@@ -35,6 +38,7 @@ class CartItem {
       'quantity': quantity,
       'selectedIngredients': selectedIngredients,
       'totalPrice': totalPrice,
+      'weight': weight,
     };
   }
 
@@ -47,6 +51,7 @@ class CartItem {
       quantity: json['quantity'],
       selectedIngredients: json['selectedIngredients'],
       totalPrice: json['totalPrice'],
+      weight: json['weight'],
     );
   }
 }
@@ -76,16 +81,13 @@ class _MenuScreenState extends State<MenuScreen> {
       final prefs = await SharedPreferences.getInstance();
       final cartKey = 'cart_items';
 
-      // Получаем текущую корзину
       final cartJson = prefs.getStringList(cartKey) ?? [];
       List<CartItem> cartItems = cartJson.map((item) => CartItem.fromJson(json.decode(item))).toList();
 
-      // Проверяем, есть ли уже такой товар с такими же ингредиентами в корзине
       bool itemExists = false;
       for (int i = 0; i < cartItems.length; i++) {
         if (cartItems[i].productId == product['id'].toString() &&
             _areIngredientsEqual(cartItems[i].selectedIngredients, selectedIngredients.toList())) {
-          // Увеличиваем количество
           cartItems[i] = CartItem(
             productId: cartItems[i].productId,
             name: cartItems[i].name,
@@ -94,13 +96,13 @@ class _MenuScreenState extends State<MenuScreen> {
             quantity: cartItems[i].quantity + 1,
             selectedIngredients: cartItems[i].selectedIngredients,
             totalPrice: cartItems[i].totalPrice + (totalPrice - int.parse(product['price'])),
+            weight: cartItems[i].weight,
           );
           itemExists = true;
           break;
         }
       }
 
-      // Если товара с такими параметрами нет в корзине, добавляем новый
       if (!itemExists) {
         cartItems.add(CartItem(
           productId: product['id'].toString(),
@@ -110,16 +112,16 @@ class _MenuScreenState extends State<MenuScreen> {
           quantity: 1,
           selectedIngredients: selectedIngredients.toList(),
           totalPrice: totalPrice,
+          weight: product['weight'],
         ));
       }
 
-      // Сохраняем обновленную корзину
       await prefs.setStringList(
         cartKey,
         cartItems.map((item) => json.encode(item.toJson())).toList(),
       );
       showAppSnackBar(context, 'Товар добавлен в корзину');
-      Navigator.pop(context); // Закрываем модальное окно
+      Navigator.pop(context);
     } catch (e) {
       showAppSnackBar(context, 'Ошибка при добавлении в корзину');
       print('Ошибка добавления в корзину: $e');
@@ -156,7 +158,7 @@ class _MenuScreenState extends State<MenuScreen> {
             ),
           ),
         ),
-        duration: Duration(seconds: 3),
+        duration: Duration(seconds: 2),
         behavior: SnackBarBehavior.floating,
         backgroundColor: Color.fromRGBO(10, 66, 51, 1),
         shape: RoundedRectangleBorder(
@@ -182,12 +184,10 @@ class _MenuScreenState extends State<MenuScreen> {
       }
       else {
         showAppSnackBar(context, 'Ошибка загрузки меню');
-        print('Ошибка: ${response.statusCode}');
       }
     }
     catch (e) {
       showAppSnackBar(context, 'Ошибка соединения');
-      print('Ошибка соединения: $e');
     }
   }
 
@@ -237,25 +237,33 @@ class _MenuScreenState extends State<MenuScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        product['name'],
-                        style: TextStyle(
-                            fontSize: 24,
+                      Flexible(  // или Expanded
+                        child: AutoSizeText(
+                          product['name'],
+                          style: TextStyle(
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            fontFamily: dotenv.env['APP_FONT_FAMILY']),
+                            fontFamily: dotenv.env['APP_FONT_FAMILY'],
+                          ),
+                          minFontSize: 10,
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                       Text(
                         '${totalPrice}р',
                         style: TextStyle(
-                            fontSize: 24,
-                            color: Color.fromRGBO(10, 66, 51, 1),
-                            fontFamily: dotenv.env['APP_FONT_FAMILY']),
+                          fontSize: 24,
+                          color: Color.fromRGBO(10, 66, 51, 1),
+                          fontFamily: dotenv.env['APP_FONT_FAMILY'],
+                        ),
                       ),
                     ],
                   ),
                   SizedBox(height: 15),
                   Text(
                     product['description'],
+                    textAlign: TextAlign.justify,
                     style: TextStyle(
                         fontSize: 16,
                         color: Colors.grey[600],
@@ -263,7 +271,7 @@ class _MenuScreenState extends State<MenuScreen> {
                   ),
                   Divider(height: 40),
                   _buildDetailItem('Состав', product['composition']),
-                  _buildDetailItem('Масса нетто', product['weight']),
+                  _buildDetailItem('Масса нетто/Объём', product['weight']),
                   _buildNutritionRow(
                     double.tryParse(product['protein']?.toString() ?? '0') ?? 0,
                     double.tryParse(product['fats']?.toString() ?? '0') ?? 0,
@@ -358,8 +366,10 @@ class _MenuScreenState extends State<MenuScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(title,
+              textAlign: TextAlign.justify,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: dotenv.env['APP_FONT_FAMILY'])),
           Text(value,
+              textAlign: TextAlign.justify,
               style: TextStyle(fontSize: 16, color: Colors.grey[600], fontFamily: dotenv.env['APP_FONT_FAMILY'])),
           SizedBox(height: 10),
         ],
@@ -456,19 +466,27 @@ class _MenuScreenState extends State<MenuScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(item['name'],
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, fontFamily: dotenv.env['APP_FONT_FAMILY'])),
+                                Expanded(
+                                  child: AutoSizeText(
+                                    item['name'],
+                                    style: TextStyle(
+                                      fontSize: 16,  // это будет максимальный размер
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: dotenv.env['APP_FONT_FAMILY'],
+                                    ),
+                                    minFontSize: 10,  // минимальный размер, до которого будет уменьшаться текст
+                                    maxLines: 3,     // количество строк (можно увеличить при необходимости)
+                                    overflow: TextOverflow.ellipsis,  // что делать, если текст не помещается
+                                    softWrap: true,
+                                  ),
+                                ),
                                 IconButton(
                                   icon: Icon(Icons.add_shopping_cart, color: Colors.black),
-                                  onPressed: () {
-                                    _showProductDetails(context, item);
-                                    },
+                                  onPressed: () => _showProductDetails(context, item),
                                 ),
                               ],
                             ),
-
                             SizedBox(height: 4),
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,

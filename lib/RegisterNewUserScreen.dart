@@ -1,3 +1,4 @@
+import 'package:batler_app/LoginScreen.dart';
 import 'package:batler_app/MainScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -67,6 +68,7 @@ class _RegisterNewUserScreenState extends State<RegisterNewUserScreen> {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'token': prefs.getString('token'),
+          'created_at_token': prefs.getString('created_at_token'),
           'name': _nameController.text,
           'birthday': _birthDateController.text,
         }),
@@ -76,11 +78,19 @@ class _RegisterNewUserScreenState extends State<RegisterNewUserScreen> {
         await prefs.setString('is_new_user', 'no');
         await prefs.setString('name', _nameController.text);
         await prefs.setString('birthday', _birthDateController.text);
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(
-            builder: (context) => MainScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => MainScreen()),
+              (route) => false,
+        );
+      }
+      else if (response.statusCode == 401) {
+        showAppSnackBar(context, 'Сеанс пользователя истёк');
+        await prefs.clear();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+              (route) => false,
         );
       }
       else {

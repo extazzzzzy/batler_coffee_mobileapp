@@ -1,4 +1,5 @@
 import 'package:batler_app/LoginScreen.dart';
+import 'package:batler_app/UserOrdersScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -69,6 +70,7 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'token': prefs.getString('token'),
+          'created_at_token': prefs.getString('created_at_token'),
           'name': _nameController.text,
           'birthday': _birthDateController.text,
         }),
@@ -77,6 +79,15 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
         await prefs.setString('name', _nameController.text);
         await prefs.setString('birthday', _birthDateController.text);
         showAppSnackBar(context, 'Данные успешно сохранены');
+      }
+      else if (response.statusCode == 401) {
+        showAppSnackBar(context, 'Сеанс пользователя истёк');
+        await prefs.clear();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+              (route) => false,
+        );
       }
       else {
         showAppSnackBar(context, 'Повторите попытку позже');
@@ -98,12 +109,22 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'token': prefs.getString('token'),
+          'created_at_token': prefs.getString('created_at_token'),
         }),
       );
       final responseBody = jsonDecode(utf8.decode(response.bodyBytes));
       if (response.statusCode == 200) {
         _nameController.text = responseBody['name'];
         _birthDateController.text = responseBody['birthday'];
+      }
+      else if (response.statusCode == 401) {
+        showAppSnackBar(context, 'Сеанс пользователя истёк');
+        await prefs.clear();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+              (route) => false,
+        );
       }
       else {
         showAppSnackBar(context, 'Ошибка получения данных');
@@ -128,25 +149,32 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
         headers: {'Content-Type': 'application/json'},
         body: json.encode({
           'token': prefs.getString('token'),
+          'created_at_token': prefs.getString('created_at_token'),
         }),
       );
       if (response.statusCode == 200) {
         await prefs.clear();
-        Navigator.pushReplacement(
+        Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(
-            builder: (context) => LoginScreen(),
-          ),
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+              (route) => false,
+        );
+      }
+      else if (response.statusCode == 401) {
+        showAppSnackBar(context, 'Сеанс пользователя истёк');
+        await prefs.clear();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+              (route) => false,
         );
       }
       else {
         showAppSnackBar(context, 'Повторите попытку позже');
-        print('Ошибка: ${response.statusCode}');
       }
     }
     catch (e) {
       showAppSnackBar(context, 'Ошибка соединения');
-      print('Ошибка соединения: $e');
     }
   }
 
@@ -163,7 +191,7 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              const SizedBox(height: 30),
+              const SizedBox(height: 15),
               Image.asset(smileImg, height: 170),
               const SizedBox(height: 30),
 
@@ -207,7 +235,7 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
                   }
                 },
               ),
-              const SizedBox(height: 50),
+              const SizedBox(height: 30),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -232,7 +260,32 @@ class _ProfileUserScreenState extends State<ProfileUserScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 50),
+              const SizedBox(height: 15),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Color.fromRGBO(254, 255, 166, 1),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pushNamed('orders');
+                  },
+                  child: Text(
+                    'Мои заказы',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontFamily: dotenv.env['APP_FONT_FAMILY'],
+                      color: Colors.black,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 15),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(

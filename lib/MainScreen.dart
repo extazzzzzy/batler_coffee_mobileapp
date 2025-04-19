@@ -1,6 +1,8 @@
 import 'package:batler_app/CartScreen.dart';
 import 'package:batler_app/MenuScreen.dart';
 import 'package:batler_app/ProfileUserScreen.dart';
+import 'package:batler_app/PromocodesScreen.dart';
+import 'package:batler_app/UserOrdersScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -12,14 +14,33 @@ class MainScreen extends StatefulWidget {
   _MainScreenState createState() => _MainScreenState();
 }
 
+class UserProfileNavigator extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Navigator(
+      initialRoute: 'profile',
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case 'profile':
+            return MaterialPageRoute(builder: (_) => ProfileUserScreen());
+          case 'orders':
+            return MaterialPageRoute(builder: (_) => UserOrdersScreen());
+          default:
+            return MaterialPageRoute(builder: (_) => ProfileUserScreen());
+        }
+      },
+    );
+  }
+}
+
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   static final List<Widget> _pages = [
     MenuScreen(),
     CartScreen(),
-    Container(color: Colors.white, child: Center(child: Text('Акции'))),
-    ProfileUserScreen(),
+    PromocodesScreen(),
+    UserProfileNavigator(),
   ];
 
   void _onItemTapped(int index) {
@@ -35,6 +56,7 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: _buildFancyNavBar(),
     );
   }
+
 
   Widget _buildFancyNavBar() {
     return Container(

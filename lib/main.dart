@@ -15,14 +15,17 @@ void main() async {
   runApp(MyApp());
 }
 
-Future<bool> isValidateToken(String token) async {
+Future<bool> isValidateToken(String token, String created_at_token) async {
   final url = Uri.parse('${dotenv.env['API_SERVER']}check_validate_token');
 
   try {
     final response = await http.post(
       url,
       headers: {'Content-Type': 'application/json'},
-      body: json.encode({'token': token}),
+      body: json.encode({
+        'token': token,
+        'created_at_token': created_at_token,
+      }),
     );
 
     if (response.statusCode == 200) {
@@ -78,11 +81,12 @@ class MyApp extends StatelessWidget {
   Future<Widget> _getInitialScreen() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('token');
+    final created_at_token = prefs.getString('created_at_token');
     if (token == null) {
       return LoginScreen();
     }
 
-    final isValid = await isValidateToken(token);
+    final isValid = await isValidateToken(token, created_at_token!);
     if (!isValid) {
       await prefs.remove('token');
       return LoginScreen();

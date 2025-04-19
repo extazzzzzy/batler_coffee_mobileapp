@@ -92,6 +92,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
         // сохраняем токен в кэш
         await prefs.setString('token', responseBody['access_token']);
+        await prefs.setString('created_at_token', responseBody['created_at_token']);
         showAppSnackBar(context, 'Авторизация пройдена успешно');
 
         if (responseBody['is_new_user']) {
@@ -105,11 +106,10 @@ class _VerificationScreenState extends State<VerificationScreen> {
         }
         else {
           await prefs.setString('is_new_user', 'no');
-          Navigator.pushReplacement(
+          Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(
-              builder: (context) => MainScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => MainScreen()),
+                (route) => false,
           );
         }
       }

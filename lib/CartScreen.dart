@@ -1,10 +1,16 @@
+import 'dart:ffi';
+
+import 'package:batler_app/LoginScreen.dart';
+import 'package:batler_app/MainScreen.dart';
 import 'package:batler_app/MenuScreen.dart';
+import 'package:batler_app/UserOrdersScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:now/now.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:http/http.dart' as http;
 
 class CartScreen extends StatefulWidget {
   @override
@@ -56,7 +62,6 @@ class _CartScreenState extends State<CartScreen> {
     setState(() {
       totalCartPrice -= cartItems[index].totalPrice;
 
-      // Рассчитываем новую цену с учетом количества
       int singleItemPrice = cartItems[index].basePrice;
       for (var ing in cartItems[index].selectedIngredients) {
         singleItemPrice += int.parse(ing['price']);
@@ -70,6 +75,7 @@ class _CartScreenState extends State<CartScreen> {
         quantity: newQuantity,
         selectedIngredients: cartItems[index].selectedIngredients,
         totalPrice: singleItemPrice * newQuantity,
+        weight: cartItems[index].weight,
       );
 
       totalCartPrice += cartItems[index].totalPrice;
@@ -91,12 +97,13 @@ class _CartScreenState extends State<CartScreen> {
               fontFamily: dotenv.env['APP_FONT_FAMILY'],
               fontSize: 16,
               fontWeight: FontWeight.w500,
+              color: Colors.black,
             ),
           ),
         ),
         duration: Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: Color.fromRGBO(10, 66, 51, 1),
+        backgroundColor: Color.fromRGBO(245, 245, 220, 1),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
         ),
@@ -107,11 +114,9 @@ class _CartScreenState extends State<CartScreen> {
   }
 
   void _placeAnOrder() async {
-    // Получаем время работы из .env
     final workingHoursFrom = dotenv.env['WORKING_HOURS_FROM'] ?? '10:00';
     final workingHoursUpTo = dotenv.env['WORKING_HOURS_UP_TO'] ?? '20:00';
 
-    // Парсим время работы
     final fromTime = TimeOfDay(
       hour: int.parse(workingHoursFrom.split(':')[0]),
       minute: int.parse(workingHoursFrom.split(':')[1]),
@@ -121,7 +126,6 @@ class _CartScreenState extends State<CartScreen> {
       minute: int.parse(workingHoursUpTo.split(':')[1]),
     );
 
-    // Генерируем временные интервалы
     final timeSlots = <String>['Как можно скорее'];
     var currentHour = fromTime.hour;
     var currentMinute = fromTime.minute;
@@ -152,7 +156,7 @@ class _CartScreenState extends State<CartScreen> {
     }
 
     String? selectedTimeSlot = "Как можно скорее";
-    String? promoCode;
+    String promoCode = "";
     bool isPromoApplied = false;
 
     await showDialog(
@@ -174,7 +178,6 @@ class _CartScreenState extends State<CartScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Список заказа
                     Text(
                       'Ваш заказ:',
                       style: TextStyle(
@@ -192,10 +195,11 @@ class _CartScreenState extends State<CartScreen> {
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Text(
-                            '$index) ${item.name} ${item.basePrice}р'
+                            '$index) ${item.name} ${item.weight} ${item.basePrice}р'
                                 '${item.selectedIngredients.isNotEmpty ? ' (' +
                                 item.selectedIngredients.map((i) => '${i['name']} +${i['price']}р').join(', ') +
                                 ')' : ''}: ${item.quantity}шт.',
+                            textAlign: TextAlign.justify,
                             style: TextStyle(
                               fontFamily: dotenv.env['APP_FONT_FAMILY'],
                               fontSize: 14,
@@ -215,7 +219,6 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                     SizedBox(height: 16),
 
-                    // Выбор времени
                     Text(
                       'К какому времени приготовить?:',
                       style: TextStyle(
@@ -250,8 +253,6 @@ class _CartScreenState extends State<CartScreen> {
                       isExpanded: true,
                     ),
                     SizedBox(height: 16),
-
-                    // Промокод
                     Text(
                       'Промокод:',
                       style: TextStyle(
@@ -280,19 +281,19 @@ class _CartScreenState extends State<CartScreen> {
                             isPromoApplied ? Icons.check_circle : Icons.arrow_forward,
                             color: isPromoApplied ? Colors.green : Theme.of(context).primaryColor,
                           ),
-                          onPressed: () {
-                            // Здесь можно добавить проверку промокода
-                            setState(() {
-                              isPromoApplied = !isPromoApplied;
-                              if (isPromoApplied) {
-                                // Применить скидку (примерно 10%)
-                                // В реальном приложении нужно проверять промокод на сервере
-                                totalCartPrice = (totalCartPrice * 0.9).round();
-                              } else {
-                                // Вернуть исходную цену
-                                _loadCartItems();
-                              }
-                            });
+                          onPressed: () async {
+                            if (isPromoApplied == false) {
+                              int oldCarPrice = totalCartPrice;
+                              await checkValidatePromocode(promoCode);
+                              setState(() {
+                                if (oldCarPrice == totalCartPrice) {
+                                  isPromoApplied = false;
+                                }
+                                else {
+                                  isPromoApplied = true;
+                                }
+                              });
+                            }
                           },
                         ),
                       ],
@@ -304,6 +305,7 @@ class _CartScreenState extends State<CartScreen> {
                 TextButton(
                   onPressed: () {
                     Navigator.of(context).pop();
+                    _loadCartItems();
                   },
                   child: Text(
                     'Отмена',
@@ -317,21 +319,8 @@ class _CartScreenState extends State<CartScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color.fromRGBO(10, 66, 51, 1),
                   ),
-                  onPressed: selectedTimeSlot == null
-                      ? null
-                      : () async {
-                    final prefs = await SharedPreferences.getInstance();
-                    await prefs.remove('cart_items');
-
-                    _showAppSnackBar(
-                      'Заказ оформлен на сумму $totalCartPriceр.\nВремя приготовления: $selectedTimeSlot',
-                    );
-
-                    setState(() {
-                      cartItems = [];
-                      totalCartPrice = 0;
-                    });
-                    Navigator.of(context).pop();
+                  onPressed: () async {
+                    createNewOrder(promoCode, isPromoApplied, selectedTimeSlot!, totalCartPrice);
                   },
                   child: Text(
                     'Подтвердить',
@@ -353,6 +342,116 @@ class _CartScreenState extends State<CartScreen> {
     final hour = time.hour.toString().padLeft(2, '0');
     final minute = time.minute.toString().padLeft(2, '0');
     return '$hour:$minute';
+  }
+
+  void createNewOrder(String promoCode, bool isPromoApplied, String selectedTimeSlot, int totalCartPrice) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cartItems = prefs.getStringList('cart_items') ?? [];
+    // создание описания заказа (состав)
+    String description = cartItems.asMap().entries.map((entry) {
+      final index = entry.key + 1;
+      final item = jsonDecode(entry.value);
+
+      final ingredients = (item['selectedIngredients'] as List).isNotEmpty
+          ? ' (${(item['selectedIngredients'] as List).map((i) => '${i['name']} +${i['price']}р').join(', ')})'
+          : '';
+
+      return '$index) ${item['name']} ${item['weight']} ${item['basePrice']}р$ingredients: ${item['quantity']}шт.';
+    }).join('\n') + '\nПромокод: ${isPromoApplied ? promoCode : "Не указан"}';
+
+    String ready_for = selectedTimeSlot;
+    String total_sum = totalCartPrice.toString();
+
+    final url = Uri.parse('${dotenv.env['API_SERVER']}create_order');
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'token': prefs.getString('token'),
+          'created_at_token': prefs.getString('created_at_token'),
+          'ready_for': ready_for,
+          'total_sum': total_sum,
+          'description': description,
+        }),
+      );
+      if (response.statusCode == 200) {
+        _showAppSnackBar(
+          'Заказ оформлен',
+        );
+        await prefs.remove('cart_items');
+        Navigator.of(context).pop();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => MainScreen()),
+        );
+      }
+      else if (response.statusCode == 401) {
+        _showAppSnackBar('Сеанс пользователя истёк');
+        await prefs.clear();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+              (route) => false,
+        );
+      }
+    }
+    catch (e) {
+      _showAppSnackBar('Ошибка соединения');
+      print('Ошибка: $e');
+    }
+  }
+
+  Future<int> checkValidatePromocode(String promoCode) async {
+    if (promoCode == "") {
+      _showAppSnackBar('Введите промокод');
+      return totalCartPrice;
+    }
+    final url = Uri.parse('${dotenv.env['API_SERVER']}check_promocode');
+    final prefs = await SharedPreferences.getInstance();
+    try {
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'token': prefs.getString('token'),
+          'promocode': promoCode,
+          'total_sum': totalCartPrice.toString(),
+          'created_at_token': prefs.getString('created_at_token'),
+        }),
+      );
+      final responseBody = jsonDecode(utf8.decode(response.bodyBytes));
+      if (response.statusCode == 200) {
+        totalCartPrice = responseBody["new_sum"] as int;
+        _showAppSnackBar('Промокод активирован');
+        return totalCartPrice;
+      }
+      else if (response.statusCode == 401) {
+        _showAppSnackBar('Сеанс пользователя истёк');
+        await prefs.clear();
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+              (route) => false,
+        );
+        return 999999;
+      }
+      else {
+        if (responseBody["detail"] == "Ошибка проверки промокода: 404: Промокод не найден" ||
+            responseBody["detail"] == "Ошибка проверки промокода: 404: Промокод неактивен") {
+          _showAppSnackBar('Промокод не найден или неактивен');
+        }
+        else {
+          _showAppSnackBar('Выполнены не все условия акции');
+        }
+        return totalCartPrice;
+      }
+    }
+    catch (e) {
+      _showAppSnackBar('Ошибка соединения');
+      print('Ошибка: $e');
+      return totalCartPrice;
+    }
   }
 
   @override
@@ -450,6 +549,16 @@ class _CartScreenState extends State<CartScreen> {
                                     fontFamily: dotenv.env['APP_FONT_FAMILY'],
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  item.weight,
+                                  style: TextStyle(
+                                    fontFamily: dotenv.env['APP_FONT_FAMILY'],
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                      color: Colors.grey[600]
                                   ),
                                 ),
                                 SizedBox(height: 4),
@@ -593,7 +702,6 @@ class _CartScreenState extends State<CartScreen> {
                     ),
                     onPressed: () {
                       _placeAnOrder();
-                      _showAppSnackBar('Заказ оформлен на сумму $totalCartPriceр');
                     },
                     child: Text(
                       'Оформить заказ',
