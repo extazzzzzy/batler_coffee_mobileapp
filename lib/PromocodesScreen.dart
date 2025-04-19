@@ -118,6 +118,9 @@ class _PromocodesScreenState extends State<PromocodesScreen> {
                       top: Radius.circular(12)),
                   child: Image.network(
                     promo['src_img'],
+                    headers: {
+                      "Access-Control-Allow-Origin": "*",
+                    },
                     width: double.infinity,
                     height: 180,
                     fit: BoxFit.cover,

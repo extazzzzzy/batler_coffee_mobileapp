@@ -519,19 +519,14 @@ class _CartScreenState extends State<CartScreen> {
                         children: [
                           ClipRRect(
                             borderRadius: BorderRadius.circular(12),
-                            child: CachedNetworkImage(
-                              imageUrl: item.imageUrl,
+                            child: Image.network(
+                              item.imageUrl,
                               width: 80,
                               height: 80,
+                              headers: {
+                                "Access-Control-Allow-Origin": "*",
+                              },
                               fit: BoxFit.cover,
-                              placeholder: (context, url) => Container(
-                                color: Colors.grey[200],
-                                child: Icon(Icons.fastfood, color: Colors.grey),
-                              ),
-                              errorWidget: (context, url, error) => Container(
-                                color: Colors.grey[200],
-                                child: Icon(Icons.fastfood, color: Colors.grey),
-                              ),
                             ),
                           ),
                           SizedBox(width: 12),

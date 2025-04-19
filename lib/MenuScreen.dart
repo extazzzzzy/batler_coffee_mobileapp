@@ -225,8 +225,11 @@ class _MenuScreenState extends State<MenuScreen> {
                   SizedBox(height: 20),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(20),
-                    child: CachedNetworkImage(
-                      imageUrl: product['src_img'],
+                    child: Image.network(
+                      product['src_img'],
+                      headers: {
+                        "Access-Control-Allow-Origin": "*",
+                      },
                       width: double.infinity,
                       height: 200,
                       fit: BoxFit.cover,
@@ -451,11 +454,13 @@ class _MenuScreenState extends State<MenuScreen> {
                       Expanded(
                         child: ClipRRect(
                           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                          child: CachedNetworkImage(
-                            imageUrl: item['src_img'],
+                          child: Image.network(
+                            item['src_img'],
+                            headers: {
+                              "Access-Control-Allow-Origin": "*",
+                            },
+                            height: 200,
                             fit: BoxFit.cover,
-                            errorWidget: (context, url, error) =>
-                                Icon(Icons.coffee, size: 50, color: Colors.brown),
                           ),
                         ),
                       ),
