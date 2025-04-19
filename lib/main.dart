@@ -1,5 +1,4 @@
 import 'package:batler_app/MainScreen.dart';
-import 'package:batler_app/ProfileUserScreen.dart';
 import 'package:batler_app/RegisterNewUserScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';

@@ -6,8 +6,6 @@ import 'package:batler_app/UserOrdersScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
 class MainScreen extends StatefulWidget {
   @override
