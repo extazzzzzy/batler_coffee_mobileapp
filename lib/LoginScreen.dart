@@ -11,7 +11,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool _isTelegramSelected = false;
+  bool _isTelegramSelected = true;
   final TextEditingController _loginController = TextEditingController();
   final String logoImg = 'src/img/batler_logo.png';
 
@@ -128,13 +128,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       onTap: () => setState(() => _isTelegramSelected = true),
                     ),
                   ),
-                  Expanded(
-                    child: _AuthTypeButton(
-                      text: 'WhatsApp',
-                      isSelected: !_isTelegramSelected,
-                      onTap: () => setState(() => _isTelegramSelected = false),
-                    ),
-                  ),
+                  // Expanded(
+                  //   child: _AuthTypeButton(
+                  //     text: 'WhatsApp',
+                  //     isSelected: !_isTelegramSelected,
+                  //     onTap: () => setState(() => _isTelegramSelected = false),
+                  //   ),
+                  // ),
                 ],
               ),
               const SizedBox(height: 30),
@@ -200,10 +200,7 @@ class _AuthTypeButton extends StatelessWidget {
             color: const Color.fromRGBO(10, 66, 51, 1),
             width: 1.5,
           ),
-          borderRadius: BorderRadius.horizontal(
-            left: text == 'Telegram' ? const Radius.circular(8) : Radius.zero,
-            right: text == 'WhatsApp' ? const Radius.circular(8) : Radius.zero,
-          ),
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Center(
           child: Text(

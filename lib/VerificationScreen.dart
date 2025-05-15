@@ -40,7 +40,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
   }
 
   void openTelegramBot() {
-    launch(dotenv.env['URL_TG_BOT'].toString(), forceSafariVC: false);
+    launch(dotenv.env['URL_TG_BOT'].toString(), forceSafariVC: true);
   }
 
   void showAppSnackBar(BuildContext context, String message) { // Креатор уведомлений
