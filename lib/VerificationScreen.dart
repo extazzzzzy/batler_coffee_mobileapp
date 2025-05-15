@@ -134,7 +134,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
               const SizedBox(height: 30),
               Image.asset(logoImg, height: 256),
               const SizedBox(height: 50),
-              
+
               _VerifyCodeInputField(
                 controller: _verificationCodeController,
                 label: 'Код подтверждения',
