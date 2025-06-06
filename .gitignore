@@ -4,6 +4,7 @@
 # Исключения для .gitignore и pubspec.yaml
 !.gitignore
 !pubspec.yaml
+!.env.example
 !android/app/src/main/AndroidManifest.xml
 
 # Исключения для папок lib и src
